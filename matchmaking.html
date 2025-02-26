@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Matchmaking with Google Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        .login-section, .matchmaking-section {
+            display: none;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .matches-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+    <!-- Google Sign-In API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Dynamic Matchmaking</h1>
+
+        <!-- Login Section -->
+        <div class="login-section" id="login-section">
+            <p>Please log in with your Google account to continue.</p>
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-login_uri="https://your-redirect-url.com"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+        </div>
+
+        <!-- Matchmaking Section -->
+        <div class="matchmaking-section" id="matchmaking-section">
+            <h2>Welcome, <span id="user-name"></span>!</h2>
+            <p>Enter your preferences to find matches:</p>
+            <input type="text" id="preferences" placeholder="Enter your preferences">
+            <button onclick="findMatches()">Find Matches</button>
+
+            <!-- Matches List -->
+            <div class="matches-list" id="matches-list">
+                <h3>Your Matches:</h3>
+                <ul id="matches"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample user data for matchmaking
+        const users = [
+            { name: "Alice", preferences: "Travel, Music, Movies" },
+            { name: "Bob", preferences: "Sports, Gaming, Tech" },
+            { name: "Charlie", preferences: "Books, Travel, Food" },
+            { name: "Diana", preferences: "Music, Movies, Art" }
+        ];
+
+        // Function to handle Google Sign-In
+        function handleCredentialResponse(response) {
+            const user = decodeJwt(response.credential);
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("matchmaking-section").style.display = "block";
+            document.getElementById("user-name").textContent = user.name;
+        }
+
+        // Function to decode JWT token
+        function decodeJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Function to find matches based on user preferences
+        function findMatches() {
+            const preferences = document.getElementById("preferences").value.toLowerCase();
+            const matches = users.filter(user => user.preferences.toLowerCase().includes(preferences));
+            const matchesList = document.getElementById("matches");
+            matchesList.innerHTML = "";
+
+            if (matches.length > 0) {
+                matches.forEach(match => {
+                    const li = document.createElement("li");
+                    li.textContent = `${match.name} - ${match.preferences}`;
+                    matchesList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement("li");
+                li.textContent = "No matches found.";
+                matchesList.appendChild(li);
+            }
+        }
+
+        // Initialize Google Sign-In
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: "YOUR_GOOGLE_CLIENT_ID",
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("login-section"),
+                { theme: "outline", size: "large" }
+            );
+            google.accounts.id.prompt();
+        };
+    </script>
+
+</body>
+</html>
